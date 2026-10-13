@@ -53,9 +53,13 @@ dependencies {
   testImplementation 'org.springframework.boot:spring-boot-starter-test'
   testImplementation 'org.springframework.security:spring-security-test'
   testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-  testImplementation 'org.testcontainers:junit-jupiter'
-  testImplementation 'org.testcontainers:postgresql'
-  testImplementation 'org.testcontainers:gcloud'
+  // testcontainers 2.x renamed sub-modules — old artifact IDs (junit-jupiter, postgresql, gcloud)
+  // no longer exist; the new IDs have a "testcontainers-" prefix. Spring Boot BOM manages the
+  // core module version but not the sub-modules, so the BOM is imported explicitly here.
+  testImplementation platform('org.testcontainers:testcontainers-bom:2.0.5')
+  testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+  testImplementation 'org.testcontainers:testcontainers-postgresql'
+  testImplementation 'org.testcontainers:testcontainers-gcloud'
   testCompileOnly 'org.projectlombok:lombok'
   testAnnotationProcessor 'org.projectlombok:lombok'
   testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -72,6 +76,7 @@ def jacocoExcludedClasses = [
   '**/LoanDataApiApplication.class',
   '**/model/entity/**',
   '**/config/**',
+  '**/client/**',
   '**/repository/bigtable/**',
   '**/LocalBigtableSeeder.class',
 ]

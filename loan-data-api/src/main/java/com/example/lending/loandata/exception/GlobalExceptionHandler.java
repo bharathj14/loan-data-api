@@ -38,6 +38,14 @@ public class GlobalExceptionHandler {
     return problem;
   }
 
+  @ExceptionHandler(DownstreamClientException.class)
+  public ProblemDetail handleDownstreamClientException(DownstreamClientException ex) {
+    ProblemDetail problem =
+        ProblemDetail.forStatusAndDetail(ex.getStatus(), "Downstream service error");
+    problem.setProperty("downstreamPath", ex.getDownstreamPath());
+    return problem;
+  }
+
   @ExceptionHandler(DatastoreException.class)
   public ProblemDetail handleDatastore(DatastoreException ex) {
     log.error("Datastore error: {}", ex.getMessage());
