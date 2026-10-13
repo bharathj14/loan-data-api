@@ -52,7 +52,7 @@
 
 ### Observability
 - X-Correlation-Id filter (MDC); JSON structured logs
-- Mask: never log full names/amounts/account numbers — last 4 chars only
+- Mask: never log full names/amounts/account numbers/loan numbers — last 4 chars only
 
 ### Code Style
 - No comments unless the WHY is non-obvious
