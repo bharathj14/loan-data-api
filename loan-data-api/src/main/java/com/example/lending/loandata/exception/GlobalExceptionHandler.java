@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.ResourceAccessException;
@@ -57,6 +58,20 @@ public class GlobalExceptionHandler {
     problem.setType(URI.create("urn:problem:service-unavailable"));
     problem.setTitle("Service Unavailable");
     problem.setDetail("A downstream data service is temporarily unavailable.");
+    return problem;
+  }
+
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ProblemDetail handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+    String violations =
+        ex.getBindingResult().getFieldErrors().stream()
+            .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+            .reduce((a, b) -> a + "; " + b)
+            .orElse("Validation failed");
+    ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    problem.setType(URI.create("urn:problem:validation-error"));
+    problem.setTitle("Bad Request");
+    problem.setDetail(violations);
     return problem;
   }
 
