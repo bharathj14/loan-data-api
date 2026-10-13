@@ -17,6 +17,9 @@ app:
       instance-uri: ${ALLOYDB_INSTANCE_URI}
       database: ${ALLOYDB_DB_NAME}
       iam-user: ${ALLOYDB_IAM_USER}
+      ip-type: ${ALLOYDB_IP_TYPE:PRIVATE}
+  downstream:
+    base-url: ${DOWNSTREAM_BASE_URL}
 
 springdoc:
   swagger-ui:

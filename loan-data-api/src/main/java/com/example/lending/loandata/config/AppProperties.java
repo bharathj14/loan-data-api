@@ -1,6 +1,8 @@
 package com.example.lending.loandata.config;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -15,7 +17,10 @@ import org.springframework.validation.annotation.Validated;
  */
 @Validated
 @ConfigurationProperties(prefix = "app")
-public record AppProperties(@Valid @NotNull Bigtable bigtable, @Valid @NotNull Executor executor) {
+public record AppProperties(
+    @Valid @NotNull Bigtable bigtable,
+    @Valid @NotNull Executor executor,
+    @Valid @NotNull Downstream downstream) {
 
   /** Bigtable connection properties. */
   public record Bigtable(
@@ -39,4 +44,17 @@ public record AppProperties(@Valid @NotNull Bigtable bigtable, @Valid @NotNull E
       @Min(0) int queueCapacity,
       /** Prefix added to thread names; useful in log correlation. */
       @NotBlank String threadNamePrefix) {}
+
+  /** Downstream Loan Servicing API connection properties. */
+  public record Downstream(
+      @NotBlank String baseUrl,
+      @Positive int connectTimeoutMs,
+      @Positive int readTimeoutMs,
+      @Valid @NotNull Retry retry) {
+
+    public record Retry(
+        @Min(1) @Max(10) int maxAttempts,
+        @Positive long initialBackoffMs,
+        @DecimalMin("1.0") @DecimalMax("3.0") double backoffMultiplier) {}
+  }
 }

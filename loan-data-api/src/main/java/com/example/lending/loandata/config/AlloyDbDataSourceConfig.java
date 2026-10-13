@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Profile;
  * is created without conditional logic in a single class.
  *
  * <ul>
- *   <li><b>prod profile:</b> AlloyDB Java Connector with IAM database authentication — no
+ *   <li><b>gcp profile:</b> AlloyDB Java Connector with IAM database authentication — no
  *       passwords, the service account identity is used as the DB user.
  *   <li><b>local / test profiles:</b> Plain PostgreSQL JDBC; the AlloyDB connector and IAM are
  *       bypassed for developer convenience.
@@ -22,9 +22,9 @@ import org.springframework.context.annotation.Profile;
 @Configuration
 public class AlloyDbDataSourceConfig {
 
-  /** Prod DataSource — AlloyDB connector with IAM auth. Passwords are never used. */
+  /** GCP DataSource — AlloyDB connector with IAM auth. Passwords are never used. */
   @Configuration
-  @Profile("prod")
+  @Profile("gcp")
   static class ProdDataSource {
 
     @Bean
@@ -32,6 +32,7 @@ public class AlloyDbDataSourceConfig {
         @Value("${app.datasource.alloydb.instanceUri}") String instanceUri,
         @Value("${app.datasource.alloydb.database}") String database,
         @Value("${app.datasource.alloydb.iamUser}") String iamUser,
+        @Value("${app.datasource.alloydb.ipType:PRIVATE}") String ipType,
         @Value("${spring.datasource.hikari.maximum-pool-size:10}") int maxPoolSize,
         @Value("${spring.datasource.hikari.minimum-idle:2}") int minIdle,
         @Value("${spring.datasource.hikari.connection-timeout:5000}") long connectionTimeout,
@@ -43,10 +44,11 @@ public class AlloyDbDataSourceConfig {
       config.setJdbcUrl(
           "jdbc:postgresql:///"
               + database
-              + "?socketFactory=com.google.cloud.alloydb.jdbc.AlloyDbSocketFactory"
-              + "&alloydbInstanceName="
-              + instanceUri
-              + "&enableIamAuth=true");
+              + "?socketFactory=com.google.cloud.alloydb.SocketFactory"
+              + "&alloydbInstanceName=" + instanceUri
+              + "&alloydbEnableIAMAuth=true"
+              + "&alloydbIpType=" + ipType
+              + "&currentSchema=loan_data");
       config.setUsername(iamUser);
       config.setMaximumPoolSize(maxPoolSize);
       config.setMinimumIdle(minIdle);

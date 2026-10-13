@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://${LOCAL_DB_HOST:localhost}:${LOCAL_DB_PORT:5432}/${LOCAL_DB_NAME:loandb}
+    url: jdbc:postgresql://${LOCAL_DB_HOST:localhost}:${LOCAL_DB_PORT:5432}/${LOCAL_DB_NAME:loandb}?currentSchema=loan_data
     username: ${LOCAL_DB_USER:loanuser}
     password: ${LOCAL_DB_PASSWORD:loanpass}
     driver-class-name: org.postgresql.Driver
