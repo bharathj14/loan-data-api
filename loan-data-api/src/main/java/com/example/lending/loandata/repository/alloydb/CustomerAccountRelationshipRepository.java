@@ -1,7 +1,7 @@
+// Repository layer: Spring Data JPA access for customer-account relationship data in AlloyDB.
 package com.example.lending.loandata.repository.alloydb;
 
 import com.example.lending.loandata.model.entity.CustomerAccountRelationshipEntity;
-import com.example.lending.loandata.model.entity.CustomerAccountRelationshipId;
 import com.example.lending.loandata.model.entity.RelationshipType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 /** Spring Data JPA repository for customer-account relationship queries. Read-only. */
 @Repository
 public interface CustomerAccountRelationshipRepository
-    extends JpaRepository<CustomerAccountRelationshipEntity, CustomerAccountRelationshipId> {
+    extends JpaRepository<CustomerAccountRelationshipEntity, CustomerAccountRelationshipEntity.Id> {
 
   /**
    * Returns all relationship rows for the given customer, eagerly fetching the associated account,
@@ -22,9 +22,9 @@ public interface CustomerAccountRelationshipRepository
   @Query(
       "SELECT r FROM CustomerAccountRelationshipEntity r "
           + "JOIN FETCH r.account "
-          + "WHERE r.customerId = :customerId "
-          + "AND (:relationshipType IS NULL OR r.relationshipType = :relationshipType) "
-          + "ORDER BY r.accountNumber ASC")
+          + "WHERE r.id.customerId = :customerId "
+          + "AND (:relationshipType IS NULL OR r.id.relationshipType = :relationshipType) "
+          + "ORDER BY r.id.accountNumber ASC")
   Page<CustomerAccountRelationshipEntity> findByCustomerIdWithAccount(
       @Param("customerId") String customerId,
       @Param("relationshipType") RelationshipType relationshipType,

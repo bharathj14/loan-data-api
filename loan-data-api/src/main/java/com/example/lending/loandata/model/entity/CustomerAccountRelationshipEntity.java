@@ -1,38 +1,41 @@
+// Model layer: JPA entity for the customer_account_relationship join table in AlloyDB.
 package com.example.lending.loandata.model.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
+import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.Objects;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-/** JPA mapping for the {@code customer_account_relationship} join table in AlloyDB. Read-only. */
+/** JPA mapping for the {@code loan_data.customer_account_relationship} join table. Read-only. */
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "customer_account_relationship")
-@IdClass(CustomerAccountRelationshipId.class)
+@Table(name = "customer_account_relationship", schema = "loan_data")
 public class CustomerAccountRelationshipEntity {
 
-  @Id
-  @Column(name = "customer_id", nullable = false, length = 50)
-  private String customerId;
-
-  @Id
-  @Column(name = "account_number", nullable = false, length = 50)
-  private String accountNumber;
-
-  @Id
-  @Enumerated(EnumType.STRING)
-  @Column(name = "relationship_type", nullable = false, length = 30)
-  private RelationshipType relationshipType;
+  @EmbeddedId private Id id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "account_number", insertable = false, updatable = false)
+  @MapsId("customerId")
+  @JoinColumn(name = "customer_id")
+  private CustomerEntity customer;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @MapsId("accountNumber")
+  @JoinColumn(name = "account_number")
   private AccountEntity account;
 
   @Column(name = "start_date")
@@ -41,29 +44,59 @@ public class CustomerAccountRelationshipEntity {
   @Column(name = "end_date")
   private LocalDate endDate;
 
-  protected CustomerAccountRelationshipEntity() {}
-
+  // Convenience delegates — keep mapper and service callers unaffected by the ID refactor.
   public String getCustomerId() {
-    return customerId;
+    return id.customerId;
   }
 
   public String getAccountNumber() {
-    return accountNumber;
+    return id.accountNumber;
   }
 
   public RelationshipType getRelationshipType() {
-    return relationshipType;
+    return id.relationshipType;
   }
 
-  public AccountEntity getAccount() {
-    return account;
-  }
+  /** Composite primary key for {@link CustomerAccountRelationshipEntity}. */
+  @Embeddable
+  public static class Id implements Serializable {
 
-  public LocalDate getStartDate() {
-    return startDate;
-  }
+    @Column(name = "customer_id", nullable = false, length = 50)
+    private String customerId;
 
-  public LocalDate getEndDate() {
-    return endDate;
+    @Column(name = "account_number", nullable = false, length = 50)
+    private String accountNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "relationship_type", nullable = false, length = 30)
+    private RelationshipType relationshipType;
+
+    protected Id() {}
+
+    public String getCustomerId() {
+      return customerId;
+    }
+
+    public String getAccountNumber() {
+      return accountNumber;
+    }
+
+    public RelationshipType getRelationshipType() {
+      return relationshipType;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof Id other)) return false;
+      return Objects.equals(customerId, other.customerId)
+          && Objects.equals(accountNumber, other.accountNumber)
+          && Objects.equals(relationshipType, other.relationshipType);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(customerId, accountNumber, relationshipType);
+    }
   }
 }

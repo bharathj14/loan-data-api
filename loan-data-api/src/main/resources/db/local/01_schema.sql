@@ -1,7 +1,8 @@
--- Local / test schema: mirrors the AlloyDB production schema.
--- Run automatically on startup when spring.sql.init.mode=always (local profile).
+-- Schema layer: DDL for loan_data schema — tables for AlloyDB/Postgres.
 
-CREATE TABLE IF NOT EXISTS customer
+CREATE SCHEMA IF NOT EXISTS loan_data;
+
+CREATE TABLE IF NOT EXISTS loan_data.customer
 (
     customer_id   VARCHAR(50)  NOT NULL PRIMARY KEY,
     full_name     VARCHAR(200) NOT NULL,
@@ -10,7 +11,7 @@ CREATE TABLE IF NOT EXISTS customer
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS account
+CREATE TABLE IF NOT EXISTS loan_data.account
 (
     account_number VARCHAR(50) NOT NULL PRIMARY KEY,
     account_type   VARCHAR(20) NOT NULL,
@@ -20,10 +21,10 @@ CREATE TABLE IF NOT EXISTS account
     currency       CHAR(3)     NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS customer_account_relationship
+CREATE TABLE IF NOT EXISTS loan_data.customer_account_relationship
 (
-    customer_id       VARCHAR(50) NOT NULL REFERENCES customer (customer_id),
-    account_number    VARCHAR(50) NOT NULL REFERENCES account (account_number),
+    customer_id       VARCHAR(50) NOT NULL REFERENCES loan_data.customer (customer_id),
+    account_number    VARCHAR(50) NOT NULL REFERENCES loan_data.account (account_number),
     relationship_type VARCHAR(30) NOT NULL,
     start_date        DATE,
     end_date          DATE,
