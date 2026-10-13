@@ -1,0 +1,43 @@
+version: "3.8"
+
+# Local development stack for loan-data-api
+# Starts a PostgreSQL container (AlloyDB stand-in) and a Cloud Bigtable emulator.
+#
+# Usage:
+#   docker compose up -d
+#   BIGTABLE_EMULATOR_HOST=localhost:9035 bash scripts/seed-local.sh
+#   ./gradlew bootRun --args='--spring.profiles.active=local'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: loanuser
+      POSTGRES_PASSWORD: loanpass
+      POSTGRES_DB: loandb
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loanuser -d loandb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  bigtable-emulator:
+    # The Cloud SDK slim image ships the Bigtable emulator.
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+    command:
+      - gcloud
+      - beta
+      - emulators
+      - bigtable
+      - start
+      - --host-port=0.0.0.0:9035
+    ports:
+      - "9035:9035"
+    healthcheck:
+      # nc (netcat) is available in the slim image; probe the gRPC listen port
+      test: ["CMD", "nc", "-z", "localhost", "9035"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
