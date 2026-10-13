@@ -76,6 +76,7 @@ def jacocoExcludedClasses = [
   '**/LoanDataApiApplication.class',
   '**/model/entity/**',
   '**/config/**',
+  '**/security/**',
   '**/client/**',
   '**/repository/bigtable/**',
   '**/LocalBigtableSeeder.class',

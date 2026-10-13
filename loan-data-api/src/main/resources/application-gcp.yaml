@@ -27,3 +27,9 @@ springdoc:
     enabled: false
   api-docs:
     enabled: false
+
+# ── Security (gcp profile) ────────────────────────────────────────────────────
+# Required env vars for OAuth2 JWT Resource Server:
+#   OAUTH2_ISSUER_URI  — OIDC issuer URL (e.g. https://accounts.google.com)
+#   OAUTH2_AUDIENCE    — expected audience claim (e.g. https://loan-data-api.example.com)
+# Both are injected via @Value in SecurityConfig; no spring.security.oauth2 YAML block needed.
