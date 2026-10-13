@@ -1,0 +1,39 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${LOCAL_DB_HOST:localhost}:${LOCAL_DB_PORT:5432}/${LOCAL_DB_NAME:loandb}
+    username: ${LOCAL_DB_USER:loanuser}
+    password: ${LOCAL_DB_PASSWORD:loanpass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 5000
+      max-lifetime: 600000
+
+  jpa:
+    hibernate:
+      # Local: allow schema creation on first run via SQL init scripts
+      ddl-auto: validate
+    show-sql: false
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/local/01_schema.sql
+      data-locations: classpath:db/local/02_seed.sql
+      # Tolerate errors so re-runs don't fail on "table already exists"
+      continue-on-error: true
+
+app:
+  bigtable:
+    project-id: local-project
+    instance-id: local-instance
+    app-profile-id: default
+    read-timeout-ms: 5000
+    emulator-host: ${BIGTABLE_EMULATOR_HOST:localhost:9035}
+
+springdoc:
+  swagger-ui:
+    enabled: true
+  api-docs:
+    enabled: true

@@ -1,3 +1,62 @@
 spring:
   application:
     name: loan-data-api
+
+  # JPA — schema must already exist; never create or alter in any profile
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # SQL initialisation — only executed when spring.sql.init.mode is set (local profile)
+  sql:
+    init:
+      mode: never
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      # Liveness must not depend on Bigtable or AlloyDB — a slow store must not kill the pod.
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db
+
+logging:
+  pattern:
+    # Structured JSON logging — correlation-id is set in MDC by CorrelationIdFilter
+    console: >-
+      {"ts":"%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}","level":"%level","logger":"%logger{36}",
+      "correlationId":"%X{correlationId}","msg":"%msg"}%n
+
+# ── Application-specific settings ────────────────────────────────────────────
+# All values must be provided via environment variables or profile overrides;
+# missing required fields cause a startup failure.
+app:
+  bigtable:
+    project-id: ${BIGTABLE_PROJECT_ID}
+    instance-id: ${BIGTABLE_INSTANCE_ID}
+    app-profile-id: ${BIGTABLE_APP_PROFILE_ID:default}
+    # Keep below the API Gateway 15 s deadline
+    read-timeout-ms: ${BIGTABLE_READ_TIMEOUT_MS:10000}
+    emulator-host: ${BIGTABLE_EMULATOR_HOST:}
+
+  executor:
+    core-pool-size: ${EXECUTOR_CORE_POOL_SIZE:4}
+    max-pool-size: ${EXECUTOR_MAX_POOL_SIZE:10}
+    queue-capacity: ${EXECUTOR_QUEUE_CAPACITY:50}
+    thread-name-prefix: bigtable-fetch-
