@@ -2,15 +2,15 @@ package com.example.lending.loandata.integration;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * End-to-end integration tests for the relationship-accounts endpoint.
  *
  * <p>REQUIRES_DOCKER: these tests start a PostgreSQL container (AlloyDB stand-in) seeded with
- * schema + data, and a Bigtable emulator container for loan enrichment. Enable by starting Docker
- * Desktop and removing {@code @Disabled}.
+ * schema + data, and a Bigtable emulator container for loan enrichment. Skipped automatically when
+ * Docker is unavailable.
  *
  * <p>Test plan when enabled:
  *
@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
  *   <li>GET with relationshipType filter → only matching rows returned.
  * </ul>
  */
-@Disabled("REQUIRES_DOCKER: start Docker Desktop and re-enable this class to run integration tests")
+@Testcontainers(disabledWithoutDocker = true)
 class RelationshipAccountIntegrationTest {
 
   @Test

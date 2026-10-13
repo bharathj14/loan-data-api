@@ -2,15 +2,14 @@ package com.example.lending.loandata.integration;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * End-to-end integration tests for the loan endpoint.
  *
  * <p>REQUIRES_DOCKER: these tests start a Bigtable emulator container via Testcontainers and seed
- * it with sample loan rows. Enable them by starting Docker Desktop and removing the
- * {@code @Disabled} annotation.
+ * it with sample loan rows. Skipped automatically when Docker is unavailable.
  *
  * <p>Test plan when enabled:
  *
@@ -21,7 +20,7 @@ import org.junit.jupiter.api.Test;
  *   <li>GET /api/v1/loans/BAD → 400 ProblemDetail (fails validation).
  * </ul>
  */
-@Disabled("REQUIRES_DOCKER: start Docker Desktop and re-enable this class to run integration tests")
+@Testcontainers(disabledWithoutDocker = true)
 class LoanIntegrationTest {
 
   @Test

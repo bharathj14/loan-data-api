@@ -1,6 +1,7 @@
 // Exception layer: maps all exceptions to RFC 7807 ProblemDetail responses.
 package com.example.lending.loandata.exception;
 
+import com.example.lending.loandata.observability.LogMask;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
@@ -42,7 +43,10 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(DownstreamClientException.class)
   public ProblemDetail handleDownstreamClientException(DownstreamClientException ex) {
-    log.warn("Downstream error at {}: status={}", ex.getDownstreamPath(), ex.getStatus().value());
+    log.warn(
+        "Downstream error at {}: status={}",
+        LogMask.accountOrLoanNumber(ex.getDownstreamPath()),
+        ex.getStatus().value());
     return ProblemDetail.forStatusAndDetail(ex.getStatus(), "Downstream service error");
   }
 
