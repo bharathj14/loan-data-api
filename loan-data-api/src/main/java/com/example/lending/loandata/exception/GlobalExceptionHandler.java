@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
@@ -78,6 +79,13 @@ public class GlobalExceptionHandler {
     problem.setTitle("Bad Request");
     problem.setDetail("Invalid value for parameter: " + ex.getName());
     return problem;
+  }
+
+  @ExceptionHandler(ResourceAccessException.class)
+  public ProblemDetail handleResourceAccessException(ResourceAccessException ex) {
+    // Downstream unreachable or retries exhausted — treat as Bad Gateway.
+    return ProblemDetail.forStatusAndDetail(
+        HttpStatus.BAD_GATEWAY, "Downstream service unavailable");
   }
 
   @ExceptionHandler(Exception.class)
