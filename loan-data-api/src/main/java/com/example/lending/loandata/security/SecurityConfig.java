@@ -1,5 +1,5 @@
-// Security layer: configures stateless Spring Security for gcp (JWT RS) and local (permit all)
-// profiles.
+// Security layer: configures stateless Spring Security for gcp (JWT OAuth2 RS) and local
+// (permit-all) profiles.
 package com.example.lending.loandata.security;
 
 import java.util.List;
