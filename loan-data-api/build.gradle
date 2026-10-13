@@ -115,11 +115,16 @@ tasks.named('check') {
 
 // ── Jib ───────────────────────────────────────────────────────────────────────
 jib {
-  from { image = 'eclipse-temurin:17-jre' }
-  to { image = System.getenv().getOrDefault('IMAGE_NAME', 'loan-data-api:latest') }
+  from {
+    image = 'eclipse-temurin:17-jre'
+  }
+  to {
+    image = System.getenv('JIB_IMAGE_NAME') ?: 'loan-data-api:local'
+  }
   container {
+    jvmFlags = ['-XX:MaxRAMPercentage=75', '-Djava.security.egd=file:/dev/./urandom']
+    user = 'nobody'
     ports = ['8080']
-    user = '1000:1000'
-    jvmFlags = ['-XX:MaxRAMPercentage=75']
+    environment = ['SPRING_PROFILES_ACTIVE': 'gcp']
   }
 }

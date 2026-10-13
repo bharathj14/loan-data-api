@@ -1,253 +1,140 @@
-# Loan Data API
+# Loan Data API — POC
 
-Read-only REST API POC exposing loan and customer relationship-account data.
-Built on Spring Boot 4.1.1 / Java 17, deployed as a container on GCP Cloud Run
-behind GCP API Gateway.
-
----
+> Production-reference Spring Boot service that reads customer loan data from AlloyDB, Bigtable, and a downstream REST API.
 
 ## Architecture
 
+```mermaid
+graph LR
+  subgraph Local
+    PS[Postgres :5432] --> API
+    BTE[Bigtable Emulator :9035] --> API
+    STUB[downstream-stub :8081] --> API
+  end
+  subgraph GCP
+    ADB[AlloyDB] --> API
+    BT[Bigtable] --> API
+    DS[Downstream API] --> API
+  end
+  API[loan-data-api :8080] --> Client
 ```
-Client
-  │  x-api-key header
-  ▼
-GCP API Gateway  ◄── openapi-gateway.yaml (gateway/)
-  │
-  ▼  HTTP (internal VPC)
-Cloud Run  (loan-data-api container)
-  │
-  ├─── GET /api/v1/loans/{loanNumber} ──────────────► Cloud Bigtable
-  │                                                    table: loans
-  │                                                    CF: details
-  │
-  └─── GET /api/v1/customers/{id}/relationship-accounts
-            │
-            ├──────────────────────────────────────► AlloyDB (PostgreSQL)
-            │                                         tables: customer,
-            │                                                 account,
-            │                                                 customer_account_relationship
-            │
-            └── (includeLoanDetails=true) ──parallel── Cloud Bigtable
-                                                        (one fetch per LOAN account
-                                                         on the current page)
-```
-
-**Data source mapping:**
-
-| API endpoint | Primary store | Optional enrichment |
-|---|---|---|
-| `GET /loans/{loanNumber}` | Cloud Bigtable `loans` table | — |
-| `GET /customers/{id}/relationship-accounts` | AlloyDB `customer_account_relationship` | Cloud Bigtable (when `includeLoanDetails=true`) |
-
-**Parallel-fetch failure policy:** if any Bigtable lookup fails or exceeds the
-configured timeout, the entire relationship-accounts request returns 503. Partial
-data is never returned. See `docs/DECISIONS.md`.
-
----
 
 ## Prerequisites
 
-- Java 17 JDK
-- Docker Desktop (for local PostgreSQL and Bigtable emulator)
-- [cbt CLI](https://cloud.google.com/bigtable/docs/cbt-reference) for seeding
-  Bigtable (`gcloud components install cbt`)
-- Gradle wrapper (committed — no separate Gradle installation needed)
+- Java 17 (JDK — set `JAVA_HOME`)
+- IntelliJ IDEA (enable annotation processing: Settings → Build → Compiler → Annotation Processors → ✓ Enable)
+- PostgreSQL 15+ running locally
+- Google Cloud CLI — install then: `gcloud components install beta bigtable`
 
----
+## One-time local setup
 
-## Running locally
+```powershell
+# Start PostgreSQL service (adjust service name if different)
+Start-Service -Name postgresql*
 
-### 1. Start the local stack
-
-```bash
-docker compose up -d
+# Create database and user (replace path with your PostgreSQL bin dir)
+& "C:\Program Files\PostgreSQL\15\bin\psql.exe" -U postgres -c "CREATE USER loanuser WITH PASSWORD 'loanpass';"
+& "C:\Program Files\PostgreSQL\15\bin\psql.exe" -U postgres -c "CREATE DATABASE loandb OWNER loanuser;"
 ```
 
-Wait for both containers to pass their health checks:
+## Daily local run
 
-```bash
-docker compose ps   # postgres and bigtable-emulator should show "healthy"
+```powershell
+# Terminal 1 — start everything
+.\scripts\seed-local.ps1
+
+# Terminal 2 — downstream stub
+$env:SPRING_PROFILES_ACTIVE='local'; .\gradlew.bat :downstream-stub:bootRun
+
+# Terminal 3 — main service
+$env:SPRING_PROFILES_ACTIVE='local'; .\gradlew.bat :loan-data-api:bootRun
 ```
 
-### 2. Seed Bigtable
+Then open: http://localhost:8080/swagger-ui.html
 
-```bash
-BIGTABLE_EMULATOR_HOST=localhost:9035 bash scripts/seed-local.sh
-```
+## Sample requests
 
-PostgreSQL is seeded automatically by Spring Boot on first startup from
-`src/main/resources/db/local/`.
-
-### 3. Start the API
-
-```bash
-./gradlew bootRun --args='--spring.profiles.active=local'
-```
-
-The app starts on port 8080.
-
-### 4. Try it in Swagger UI
-
-Open [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-
-**Sample requests:**
-
-```bash
-# Loan detail (Bigtable)
-curl http://localhost:8080/api/v1/loans/LN100001
-
-# Relationship accounts (AlloyDB only)
-curl "http://localhost:8080/api/v1/customers/CUST-0001/relationship-accounts"
-
-# Relationship accounts with Bigtable enrichment
-curl "http://localhost:8080/api/v1/customers/CUST-0001/relationship-accounts?includeLoanDetails=true"
-
-# Health probes
-curl http://localhost:8080/actuator/health/liveness
-curl http://localhost:8080/actuator/health/readiness
-```
-
----
-
-## Running tests
-
-```bash
-# All checks (Spotless format, unit tests, JaCoCo coverage gate)
-./gradlew check
-
-# Tests only (without coverage gate)
-./gradlew test
-
-# Coverage report (HTML)
-open build/reports/jacoco/test/html/index.html
-```
-
-Integration tests require Docker and are currently `@Disabled("REQUIRES_DOCKER")`.
-To enable them, start Docker Desktop, then remove the `@Disabled` annotations in:
-
-- `src/test/java/.../integration/LoanIntegrationTest.java`
-- `src/test/java/.../integration/RelationshipAccountIntegrationTest.java`
-
----
-
-## Configuration reference
-
-All values are read from environment variables. Non-starred items have defaults.
-
-| Environment variable | Description | Default |
+| Endpoint | Example | Expected |
 |---|---|---|
-| `PORT` | HTTP listen port | `8080` |
-| `BIGTABLE_PROJECT_ID` | GCP project ID | *(required)* |
-| `BIGTABLE_INSTANCE_ID` | Bigtable instance ID | *(required)* |
-| `BIGTABLE_APP_PROFILE_ID` | Bigtable app profile | `default` |
-| `BIGTABLE_READ_TIMEOUT_MS` | Bigtable read timeout (ms) | `10000` |
-| `BIGTABLE_EMULATOR_HOST` | Emulator address (local only) | *(empty = prod)* |
-| `ALLOYDB_INSTANCE_URI` | AlloyDB instance URI (prod) | *(required in prod)* |
-| `ALLOYDB_DB_NAME` | Database name | *(required in prod)* |
-| `ALLOYDB_DB_USER` | IAM database user | *(required in prod)* |
-| `HIKARI_MAX_POOL_SIZE` | HikariCP max connections | `10` |
-| `HIKARI_MIN_IDLE` | HikariCP min idle | `2` |
-| `HIKARI_CONNECTION_TIMEOUT_MS` | Connection timeout (ms) | `5000` |
-| `HIKARI_MAX_LIFETIME_MS` | Max connection lifetime (ms) | `1800000` |
-| `EXECUTOR_CORE_POOL_SIZE` | Bigtable fetch thread pool core size | `4` |
-| `EXECUTOR_MAX_POOL_SIZE` | Bigtable fetch thread pool max size | `10` |
-| `EXECUTOR_QUEUE_CAPACITY` | Bigtable fetch thread pool queue depth | `50` |
-| `LOCAL_DB_HOST` | Local PostgreSQL host (local profile) | `localhost` |
-| `LOCAL_DB_PORT` | Local PostgreSQL port | `5432` |
-| `LOCAL_DB_NAME` | Local database name | `loandb` |
-| `LOCAL_DB_USER` | Local database user | `loanuser` |
-| `LOCAL_DB_PASSWORD` | Local database password | `loanpass` |
+| GET loan | `GET /api/v1/loans/LN1000000001` | 200 loan detail |
+| GET loan — not found | `GET /api/v1/loans/LN9999999999` | 404 ProblemDetail |
+| GET loan — bad format | `GET /api/v1/loans/BAD` | 400 ProblemDetail |
+| GET relationship accounts | `GET /api/v1/customers/1/relationship-accounts` | 200 paged list |
+| GET payments | `GET /api/v1/loans/LN1000000001/payments` | 200 payments list |
+| POST notes | `POST /api/v1/loans/LN1000000001/notes` | 200 note created |
+| POST notes — simulate 500 | `POST /api/v1/loans/LN9999999500/notes` | 502 ProblemDetail |
 
----
+## GCP setup
+
+| Variable | How to obtain |
+|---|---|
+| `ALLOYDB_INSTANCE_URI` | `gcloud alloydb instances describe <instance> --cluster=<cluster> --region=<region> --format='value(name)'` |
+| `ALLOYDB_DB_NAME` | Database name (e.g. `loandb`) |
+| `ALLOYDB_IAM_USER` | Service account email used by Cloud Run |
+| `ALLOYDB_IP_TYPE` | `PRIVATE` (default) or `PUBLIC` |
+| `BIGTABLE_PROJECT_ID` | `gcloud config get-value project` |
+| `BIGTABLE_INSTANCE_ID` | `gcloud bigtable instances list` |
+| `BIGTABLE_APP_PROFILE_ID` | `default` or your custom profile |
+| `DOWNSTREAM_BASE_URL` | Base URL of the downstream REST service |
+| `OAUTH2_ISSUER_URI` | `https://accounts.google.com` (for GCP) |
+| `OAUTH2_AUDIENCE` | Your API Gateway audience or client ID |
+
+```powershell
+# Authenticate
+gcloud auth application-default login
+$env:SPRING_PROFILES_ACTIVE='gcp'; .\gradlew.bat :loan-data-api:bootRun
+```
+
+Required IAM roles on the Cloud Run service account:
+- `roles/alloydb.client`
+- `roles/bigtable.reader`
+- `roles/iam.serviceAccountTokenCreator` (for AlloyDB IAM auth)
 
 ## Cloud Run + API Gateway deployment
 
-> **Documentation only — do not run against a real GCP project during evaluation.**
+See `deploy/README.md` and `gateway/README.md` for deployment documentation.
+These belong in the infrastructure repository in the target architecture.
 
-### 1. Build and push the container image
+## Troubleshooting
 
-```bash
-IMAGE_NAME=gcr.io/YOUR_PROJECT_ID/loan-data-api:latest \
-  ./gradlew jib
-```
-
-Jib builds and pushes directly without a local Docker daemon.
-
-### 2. Deploy to Cloud Run
-
-```bash
-gcloud run deploy loan-data-api \
-  --image gcr.io/YOUR_PROJECT_ID/loan-data-api:latest \
-  --region us-central1 \
-  --no-allow-unauthenticated \
-  --set-env-vars "BIGTABLE_PROJECT_ID=YOUR_PROJECT_ID" \
-  --set-env-vars "BIGTABLE_INSTANCE_ID=YOUR_INSTANCE" \
-  --set-env-vars "ALLOYDB_INSTANCE_URI=projects/YOUR_PROJECT/locations/us-central1/clusters/YOUR_CLUSTER/instances/YOUR_INSTANCE" \
-  --set-env-vars "ALLOYDB_DB_NAME=loandb" \
-  --set-env-vars "ALLOYDB_DB_USER=loan-api-sa@YOUR_PROJECT.iam" \
-  --service-account loan-api-sa@YOUR_PROJECT.iam.gserviceaccount.com \
-  --spring-profiles-active prod
-```
-
-The service account must have:
-- `roles/bigtable.reader` on the Bigtable instance
-- `roles/alloydb.databaseUser` and Cloud SQL/AlloyDB IAM login
-
-### 3. Create the API Gateway
-
-```bash
-# Replace <CLOUD_RUN_URL> in gateway/openapi-gateway.yaml with the deployed URL, then:
-
-gcloud api-gateway apis create loan-data-api \
-  --project YOUR_PROJECT_ID
-
-gcloud api-gateway api-configs create v1 \
-  --api loan-data-api \
-  --openapi-spec gateway/openapi-gateway.yaml \
-  --project YOUR_PROJECT_ID \
-  --backend-auth-service-account gateway-sa@YOUR_PROJECT.iam.gserviceaccount.com
-
-gcloud api-gateway gateways create loan-gateway \
-  --api loan-data-api \
-  --api-config v1 \
-  --location us-central1 \
-  --project YOUR_PROJECT_ID
-```
-
-### 4. Create an API key and test
-
-```bash
-gcloud services enable apigateway.googleapis.com --project YOUR_PROJECT_ID
-
-# Create an API key restricted to the loan-data-api service
-GATEWAY_URL=$(gcloud api-gateway gateways describe loan-gateway \
-  --location us-central1 --project YOUR_PROJECT_ID --format 'value(defaultHostname)')
-
-curl -H "x-api-key: YOUR_API_KEY" \
-  "https://${GATEWAY_URL}/api/v1/loans/LN100001"
-```
-
----
+| Symptom | Fix |
+|---|---|
+| `Connection refused :5432` | Start PostgreSQL: `Start-Service postgresql*` |
+| `Connection refused :9035` | Run `.\scripts\seed-local.ps1` to start the emulator |
+| `Connection refused :8081` | Start downstream-stub in a separate terminal |
+| `401 Unauthorized` in gcp | Check `OAUTH2_ISSUER_URI` and `OAUTH2_AUDIENCE` env vars |
+| `HikariPool timeout` | Verify `loanuser` can connect: `psql -U loanuser -d loandb` |
+| Lombok not generating code | Enable annotation processing in IntelliJ |
 
 ## Project structure
 
 ```
-src/main/java/com/example/lending/loandata/
-├── config/            Spring @Configuration beans (Bigtable, AlloyDB, thread pool, OpenAPI)
-├── controller/        HTTP layer — annotations only, no business logic
-├── service/           Business logic, coordinates both data stores
-├── repository/
-│   ├── alloydb/       Spring Data JPA repositories
-│   └── bigtable/      Bigtable read operations
-├── mapper/            Maps raw data (Maps / JPA entities) to DTO records
-├── model/
-│   ├── dto/           Java record DTOs
-│   └── entity/        JPA entity classes
-├── exception/         Domain exceptions + GlobalExceptionHandler (RFC 7807)
-└── observability/     CorrelationIdFilter, MdcTaskDecorator
+loan-data-api/          — deployable Spring Boot service (Cloud Run)
+  src/main/java/.../
+    config/             — Spring configuration beans
+    controller/         — REST controllers (HTTP + OpenAPI only)
+    service/            — business logic and orchestration
+    repository/alloydb/ — JPA repositories
+    repository/bigtable/— Bigtable read-only access
+    client/             — downstream REST HTTP client
+    model/dto/          — API request/response records
+    model/entity/       — JPA entities
+    mapper/             — DTO ↔ entity conversion
+    exception/          — exception types + @RestControllerAdvice
+    observability/      — correlation ID filter, log masking
+    security/           — Spring Security configuration
+downstream-stub/        — LOCAL ONLY: imitates the downstream API on :8081
+gateway/                — API Gateway OpenAPI config (infrastructure repo)
+deploy/                 — Cloud Run deploy docs (infrastructure repo)
+scripts/                — local development helpers
+```
 
-gateway/               openapi-gateway.yaml — GCP API Gateway config
-scripts/               seed-local.sh — seeds Bigtable emulator
-docs/                  DECISIONS.md — design decisions and assumptions
+## Build
+
+```powershell
+# Lint + tests + 80% coverage gate
+.\gradlew.bat :loan-data-api:check
+
+# Format
+.\gradlew.bat :loan-data-api:spotlessApply
 ```
