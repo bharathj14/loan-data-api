@@ -1,0 +1,19 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+# Override Bigtable properties so AppProperties validation passes without real values
+app:
+  bigtable:
+    project-id: test-project
+    instance-id: test-instance
+    app-profile-id: default
+    read-timeout-ms: 5000
+    emulator-host: localhost:9999
+
+  executor:
+    core-pool-size: 2
+    max-pool-size: 4
+    queue-capacity: 10
+    thread-name-prefix: test-bigtable-
