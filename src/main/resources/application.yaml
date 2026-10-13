@@ -60,3 +60,12 @@ app:
     max-pool-size: ${EXECUTOR_MAX_POOL_SIZE:10}
     queue-capacity: ${EXECUTOR_QUEUE_CAPACITY:50}
     thread-name-prefix: bigtable-fetch-
+
+# ── OpenAPI (springdoc) ───────────────────────────────────────────────────────
+springdoc:
+  api-docs:
+    # Force OpenAPI 3.0 output; GCP API Gateway does not accept 3.1 documents.
+    openapi-version: 3.0.3
+  swagger-ui:
+    enabled: false
+  show-actuator: false
