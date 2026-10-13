@@ -1,9 +1,11 @@
+// Repository layer: read-only Bigtable access for loan row data.
 package com.example.lending.loandata.repository.bigtable;
 
 import com.example.lending.loandata.exception.DatastoreException;
 import com.google.cloud.bigtable.data.v2.BigtableDataClient;
 import com.google.cloud.bigtable.data.v2.models.Filters;
 import com.google.cloud.bigtable.data.v2.models.Row;
+import com.google.cloud.bigtable.data.v2.models.TableId;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -35,7 +37,7 @@ public class BigtableRepository {
     try {
       Row row =
           client.readRow(
-              TABLE_LOANS,
+              TableId.of(TABLE_LOANS),
               loanNumber,
               Filters.FILTERS
                   .chain()
@@ -70,7 +72,7 @@ public class BigtableRepository {
     try {
       Row row =
           client.readRow(
-              TABLE_LOANS,
+              TableId.of(TABLE_LOANS),
               loanNumber,
               Filters.FILTERS
                   .chain()

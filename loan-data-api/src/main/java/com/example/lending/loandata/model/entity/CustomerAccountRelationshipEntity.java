@@ -57,6 +57,18 @@ public class CustomerAccountRelationshipEntity {
     return id.relationshipType;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof CustomerAccountRelationshipEntity other)) return false;
+    return id != null && id.equals(other.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(id);
+  }
+
   /** Composite primary key for {@link CustomerAccountRelationshipEntity}. */
   @Embeddable
   public static class Id implements Serializable {

@@ -5,8 +5,8 @@ import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
 import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest;
 import com.google.cloud.bigtable.data.v2.BigtableDataClient;
 import com.google.cloud.bigtable.data.v2.models.BulkMutation;
-import com.google.cloud.bigtable.data.v2.models.Mutation;
-import com.google.protobuf.ByteString;
+import com.google.cloud.bigtable.data.v2.models.RowMutationEntry;
+import com.google.cloud.bigtable.data.v2.models.TableId;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,22 +54,22 @@ public class LocalBigtableSeeder {
       {"LN1000000005", "320000.00", "2400.00", "2026-12-01", "315000.00"},
     };
 
-    BulkMutation mutations = BulkMutation.create(TABLE_ID);
+    BulkMutation mutations = BulkMutation.create(TableId.of(TABLE_ID));
     for (String[] loan : loans) {
       String loanNumber = loan[0];
-      Mutation m = Mutation.create();
-      setCell(m, "loan_amount", loan[1]);
-      setCell(m, "next_payment_amount", loan[2]);
-      setCell(m, "next_payment_due_date", loan[3]);
-      setCell(m, "outstanding_balance", loan[4]);
-      mutations.add(loanNumber, m);
+      RowMutationEntry entry = RowMutationEntry.create(loanNumber);
+      setCell(entry, "loan_amount", loan[1]);
+      setCell(entry, "next_payment_amount", loan[2]);
+      setCell(entry, "next_payment_due_date", loan[3]);
+      setCell(entry, "outstanding_balance", loan[4]);
+      mutations.add(entry);
     }
     dataClient.bulkMutateRows(mutations);
     log.info("Seeded {} loans into Bigtable table '{}'", loans.length, TABLE_ID);
   }
 
-  private void setCell(Mutation m, String qualifier, String value) {
+  private void setCell(RowMutationEntry entry, String qualifier, String value) {
     if (value == null) return;
-    m.setCell(FAMILY, ByteString.copyFromUtf8(qualifier), ByteString.copyFromUtf8(value));
+    entry.setCell(FAMILY, qualifier, value);
   }
 }

@@ -20,11 +20,16 @@ public interface CustomerAccountRelationshipRepository
    * optionally filtered by relationship type. Sorted by {@code account_number} for stable paging.
    */
   @Query(
-      "SELECT r FROM CustomerAccountRelationshipEntity r "
-          + "JOIN FETCH r.account "
-          + "WHERE r.id.customerId = :customerId "
-          + "AND (:relationshipType IS NULL OR r.id.relationshipType = :relationshipType) "
-          + "ORDER BY r.id.accountNumber ASC")
+      value =
+          "SELECT r FROM CustomerAccountRelationshipEntity r "
+              + "JOIN FETCH r.account "
+              + "WHERE r.id.customerId = :customerId "
+              + "AND (:relationshipType IS NULL OR r.id.relationshipType = :relationshipType) "
+              + "ORDER BY r.id.accountNumber ASC",
+      countQuery =
+          "SELECT COUNT(r) FROM CustomerAccountRelationshipEntity r "
+              + "WHERE r.id.customerId = :customerId "
+              + "AND (:relationshipType IS NULL OR r.id.relationshipType = :relationshipType)")
   Page<CustomerAccountRelationshipEntity> findByCustomerIdWithAccount(
       @Param("customerId") String customerId,
       @Param("relationshipType") RelationshipType relationshipType,
