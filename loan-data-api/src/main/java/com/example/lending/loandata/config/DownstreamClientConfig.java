@@ -3,9 +3,12 @@ package com.example.lending.loandata.config;
 
 import com.example.lending.loandata.client.LoanServicingClient;
 import com.example.lending.loandata.client.RetryClientHttpRequestInterceptor;
+import com.example.lending.loandata.exception.DownstreamClientException;
 import java.time.Duration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -48,6 +51,21 @@ public class DownstreamClientConfig {
             .baseUrl(downstream.baseUrl())
             .requestFactory(requestFactory)
             .requestInterceptor(new RetryClientHttpRequestInterceptor(retryTemplate))
+            .defaultStatusHandler(
+                HttpStatusCode::isError,
+                (req, resp) -> {
+                  HttpStatus status = HttpStatus.resolve(resp.getStatusCode().value());
+                  // 4xx from downstream → return the same 4xx to our caller
+                  // 5xx/timeout from downstream → 502 Bad Gateway
+                  HttpStatus mappedStatus =
+                      (status != null && status.is4xxClientError())
+                          ? status
+                          : HttpStatus.BAD_GATEWAY;
+                  throw new DownstreamClientException(
+                      mappedStatus,
+                      req.getURI().getPath(),
+                      "Downstream returned " + resp.getStatusCode().value());
+                })
             .build();
 
     return HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient))

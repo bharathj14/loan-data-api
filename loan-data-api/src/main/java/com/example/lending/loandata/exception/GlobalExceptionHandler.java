@@ -1,3 +1,4 @@
+// Exception layer: maps all exceptions to RFC 7807 ProblemDetail responses.
 package com.example.lending.loandata.exception;
 
 import jakarta.validation.ConstraintViolation;
