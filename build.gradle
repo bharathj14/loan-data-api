@@ -1,136 +1,19 @@
-plugins {
-  id 'java'
-  id 'org.springframework.boot' version '4.1.1'
-  id 'io.spring.dependency-management' version '1.1.7'
-  id 'com.google.cloud.tools.jib' version '3.5.2'
-  id 'com.diffplug.spotless' version '7.0.4'
-  id 'jacoco'
-}
+// Root build: shared configuration applied to all submodules.
 
-group = 'com.example.lending'
-version = '0.0.1-SNAPSHOT'
+subprojects {
+  apply plugin: 'java'
 
-java {
-  toolchain {
-    languageVersion = JavaLanguageVersion.of(17)
-  }
-}
-
-repositories {
-  mavenCentral()
-}
-
-dependencyManagement {
-  imports {
-    mavenBom 'com.google.cloud:libraries-bom:26.86.0'
-  }
-}
-
-dependencies {
-  // ── Spring Boot starters ──────────────────────────────────────────────────
-  implementation 'org.springframework.boot:spring-boot-starter-actuator'
-  implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-  implementation 'org.springframework.boot:spring-boot-starter-validation'
-  implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-
-  // ── Google Cloud (versions managed by libraries-bom) ─────────────────────
-  implementation 'com.google.cloud:google-cloud-bigtable'
-
-  // AlloyDB JDBC socket factory — runtimeOnly: referenced only as class name
-  // in the JDBC URL string, never imported in application code.
-  runtimeOnly 'com.google.cloud:alloydb-jdbc-connector:1.3.2'
-
-  // ── Database driver ───────────────────────────────────────────────────────
-  runtimeOnly 'org.postgresql:postgresql'
-
-  // ── OpenAPI / Swagger UI ──────────────────────────────────────────────────
-  // v3 line targets Spring Boot 4; outputs OpenAPI 3.0 (not 3.1)
-  implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
-
-  // ── Config metadata processor ─────────────────────────────────────────────
-  annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-
-  // ── Test ──────────────────────────────────────────────────────────────────
-  testImplementation 'org.springframework.boot:spring-boot-starter-test'
-  testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-  testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
-  testImplementation 'org.testcontainers:testcontainers-postgresql'
-  testImplementation 'org.testcontainers:testcontainers-gcloud'
-  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-// ── Test ─────────────────────────────────────────────────────────────────────
-tasks.named('test') {
-  useJUnitPlatform()
-  finalizedBy jacocoTestReport
-}
-
-// ── JaCoCo ────────────────────────────────────────────────────────────────────
-// Classes excluded from coverage measurement:
-//   - Spring Boot entry point (no business logic)
-//   - JPA entity classes (getters/setters only; covered by integration tests)
-//   - @Configuration beans (need live context; Bigtable/AlloyDB require Docker)
-//   - BigtableRepository (needs live Bigtable emulator; Docker unavailable)
-def jacocoExcludedClasses = [
-  '**/LoanDataApiApplication.class',
-  '**/model/entity/**',
-  '**/config/**',
-  '**/repository/bigtable/**',
-]
-
-jacocoTestReport {
-  dependsOn test
-  classDirectories.setFrom(
-    files(classDirectories.files.collect { fileTree(dir: it, excludes: jacocoExcludedClasses) })
-  )
-  reports {
-    xml.required = true
-    html.required = true
-  }
-}
-
-jacocoTestCoverageVerification {
-  classDirectories.setFrom(
-    files(classDirectories.files.collect { fileTree(dir: it, excludes: jacocoExcludedClasses) })
-  )
-  violationRules {
-    rule {
-      limit {
-        counter = 'LINE'
-        value = 'COVEREDRATIO'
-        minimum = 0.80
-      }
+  java {
+    toolchain {
+      languageVersion = JavaLanguageVersion.of(17)
     }
   }
-}
 
-// ── Spotless / google-java-format ────────────────────────────────────────────
-spotless {
-  java {
-    googleJavaFormat('1.22.0')
-    target 'src/**/*.java'
+  repositories {
+    mavenCentral()
   }
-}
 
-// Wire coverage gate and spotless check into the standard check lifecycle.
-// spotlessCheck is already auto-wired by the Spotless plugin.
-// jacocoTestCoverageVerification is added explicitly here (Phase 7 onwards).
-tasks.named('check') {
-  dependsOn jacocoTestCoverageVerification
-}
-
-// ── Jib ───────────────────────────────────────────────────────────────────────
-jib {
-  from {
-    image = 'eclipse-temurin:17-jre'
-  }
-  to {
-    image = System.getenv().getOrDefault('IMAGE_NAME', 'loan-data-api:latest')
-  }
-  container {
-    ports = ['8080']
-    // Run as non-root user uid:gid 1000:1000 for security hardening.
-    user = '1000:1000'
-    jvmFlags = ['-XX:MaxRAMPercentage=75']
+  tasks.withType(Test).configureEach {
+    useJUnitPlatform()
   }
 }

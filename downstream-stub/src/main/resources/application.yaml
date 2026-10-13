@@ -1,0 +1,6 @@
+# TEMPORARY: stub application config. Local only.
+server:
+  port: 8081
+spring:
+  application:
+    name: downstream-stub

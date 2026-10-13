@@ -1,1 +1,7 @@
+// Root settings for the loan-data-api multi-module project.
+// TEMPORARY note: downstream-stub is kept here only so the POC runs standalone.
+// In the target architecture it is a separate repository/service. Never deployed.
+
 rootProject.name = 'loan-data-api'
+
+include ':loan-data-api', ':downstream-stub'

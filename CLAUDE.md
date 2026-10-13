@@ -1,9 +1,10 @@
 # CLAUDE.md — Engineering Standards
 
 ## Build & Run Commands
-- Check (lint + coverage gate): `.\gradlew.bat :loan-data-api:check`
-- Run loan-data-api (local): set `SPRING_PROFILES_ACTIVE=local` in IntelliJ run config
-- Run downstream-stub (local): set `SPRING_PROFILES_ACTIVE=local` in IntelliJ run config (port 8081)
+- Check (lint + 80% line-coverage gate): `.\gradlew.bat :loan-data-api:check`
+- Run loan-data-api (terminal): `$env:SPRING_PROFILES_ACTIVE='local'; .\gradlew.bat :loan-data-api:bootRun`
+- Run loan-data-api (IntelliJ): add env var `SPRING_PROFILES_ACTIVE=local` to run config
+- Run downstream-stub (terminal): `$env:SPRING_PROFILES_ACTIVE='local'; .\gradlew.bat :downstream-stub:bootRun`
 - Tests only: `.\gradlew.bat :loan-data-api:test`
 - Format: `.\gradlew.bat :loan-data-api:spotlessApply`
 
@@ -30,13 +31,13 @@
 
 ### Data Access
 - All associations LAZY; one query per endpoint via JOIN FETCH or @EntityGraph
-- @Transactional(readOnly=true) on read services; open-in-view=false; ddl-auto=validate outside local
+- @Transactional(readOnly=true) on read services; open-in-view=false; ddl-auto=validate in gcp, ddl-auto=validate in local (schema created by 01_schema.sql via spring.sql.init)
 - HikariCP configured from properties; one BigtableDataClient bean (closed on shutdown)
 - Bigtable values: UTF-8 strings; decimals plain text; dates ISO yyyy-MM-dd; mapper tolerates nulls
 
 ### HTTP Client
 - Spring RestClient + HTTP interface (@GetExchange/@PostExchange). No RestTemplate, no OpenFeign.
-- GET: retry on connection errors/5xx/429 via spring-retry RetryTemplate interceptor
+- GET: retry on connection errors/5xx/429 via spring-retry RetryTemplate interceptor (wired in DownstreamClientConfig)
 - POST: never retry; Idempotency-Key header (UUID)
 - Propagate X-Correlation-Id to downstream
 - Map 4xx→our 4xx, 5xx/timeout→502/503; never forward downstream bodies verbatim
@@ -47,7 +48,7 @@
 - Pagination: page/size, max 100
 
 ### Security
-- Stateless. gcp: JWT OAuth2 RS (issuer/audience from env). local: permit all but still stateless.
+- Stateless. gcp: JWT OAuth2 Resource Server (issuer/audience from env vars OAUTH2_ISSUER_URI, OAUTH2_AUDIENCE). local: permit all but still stateless.
 - Actuator health open; everything else authenticated in gcp
 
 ### Observability
@@ -55,6 +56,6 @@
 - Mask: never log full names/amounts/account numbers/loan numbers — last 4 chars only
 
 ### Code Style
-- No comments unless the WHY is non-obvious
+- Every class file begins with a mandatory one-line header comment stating purpose and layer (this is always required, regardless of the rule below)
+- Within method bodies: add inline comments only when the WHY is non-obvious — not for what the code does
 - No dead code; no commented-out code; no System.out
-- Every class file begins with a one-line header comment (purpose + layer)
