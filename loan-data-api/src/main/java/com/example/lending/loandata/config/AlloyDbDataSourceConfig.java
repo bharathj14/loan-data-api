@@ -1,3 +1,4 @@
+// Config layer: configures AlloyDB (gcp profile) and local Postgres (local profile) DataSource beans.
 package com.example.lending.loandata.config;
 
 import com.zaxxer.hikari.HikariConfig;
@@ -29,10 +30,10 @@ public class AlloyDbDataSourceConfig {
 
     @Bean
     DataSource dataSource(
-        @Value("${app.datasource.alloydb.instanceUri}") String instanceUri,
+        @Value("${app.datasource.alloydb.instance-uri}") String instanceUri,
         @Value("${app.datasource.alloydb.database}") String database,
-        @Value("${app.datasource.alloydb.iamUser}") String iamUser,
-        @Value("${app.datasource.alloydb.ipType:PRIVATE}") String ipType,
+        @Value("${app.datasource.alloydb.iam-user}") String iamUser,
+        @Value("${app.datasource.alloydb.ip-type:PRIVATE}") String ipType,
         @Value("${spring.datasource.hikari.maximum-pool-size:10}") int maxPoolSize,
         @Value("${spring.datasource.hikari.minimum-idle:2}") int minIdle,
         @Value("${spring.datasource.hikari.connection-timeout:5000}") long connectionTimeout,

@@ -12,7 +12,7 @@ spring:
 
   jpa:
     hibernate:
-      # Local: allow schema creation on first run via SQL init scripts
+      # Schema is created by SQL init scripts below; ddl-auto stays at validate to catch drift.
       ddl-auto: validate
     show-sql: false
 

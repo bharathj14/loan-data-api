@@ -1,3 +1,4 @@
+// Config layer: validated @ConfigurationProperties for all custom app settings.
 package com.example.lending.loandata.config;
 
 import jakarta.validation.Valid;
