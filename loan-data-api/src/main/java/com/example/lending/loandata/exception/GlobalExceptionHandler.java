@@ -42,10 +42,8 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(DownstreamClientException.class)
   public ProblemDetail handleDownstreamClientException(DownstreamClientException ex) {
-    ProblemDetail problem =
-        ProblemDetail.forStatusAndDetail(ex.getStatus(), "Downstream service error");
-    problem.setProperty("downstreamPath", ex.getDownstreamPath());
-    return problem;
+    log.warn("Downstream error at {}: status={}", ex.getDownstreamPath(), ex.getStatus().value());
+    return ProblemDetail.forStatusAndDetail(ex.getStatus(), "Downstream service error");
   }
 
   @ExceptionHandler(DatastoreException.class)
@@ -83,7 +81,7 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(ResourceAccessException.class)
   public ProblemDetail handleResourceAccessException(ResourceAccessException ex) {
-    // Downstream unreachable or retries exhausted — treat as Bad Gateway.
+    log.warn("Downstream unreachable or retries exhausted: {}", ex.getMessage());
     return ProblemDetail.forStatusAndDetail(
         HttpStatus.BAD_GATEWAY, "Downstream service unavailable");
   }

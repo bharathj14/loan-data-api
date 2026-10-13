@@ -55,8 +55,6 @@ public class DownstreamClientConfig {
                 HttpStatusCode::isError,
                 (req, resp) -> {
                   HttpStatus status = HttpStatus.resolve(resp.getStatusCode().value());
-                  // 4xx from downstream → return the same 4xx to our caller
-                  // 5xx/timeout from downstream → 502 Bad Gateway
                   HttpStatus mappedStatus =
                       (status != null && status.is4xxClientError())
                           ? status
