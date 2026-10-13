@@ -33,6 +33,7 @@ dependencies {
 
   // ── Google Cloud (versions managed by libraries-bom) ─────────────────────
   implementation 'com.google.cloud:google-cloud-bigtable'
+  // AlloyDB connector version is NOT in libraries-bom — pinned explicitly.
   runtimeOnly 'com.google.cloud:alloydb-jdbc-connector:1.3.2'
 
   // ── Database driver ───────────────────────────────────────────────────────
@@ -61,8 +62,8 @@ dependencies {
 }
 
 // ── Test ─────────────────────────────────────────────────────────────────────
+// useJUnitPlatform() is inherited from root subprojects block; only JaCoCo wiring added here.
 tasks.named('test') {
-  useJUnitPlatform()
   finalizedBy jacocoTestReport
 }
 
