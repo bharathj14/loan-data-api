@@ -2,6 +2,7 @@
 package com.example.lending.loandata.repository.bigtable;
 
 import com.example.lending.loandata.exception.DatastoreException;
+import com.example.lending.loandata.observability.LogMask;
 import com.google.cloud.bigtable.data.v2.BigtableDataClient;
 import com.google.cloud.bigtable.data.v2.models.Filters;
 import com.google.cloud.bigtable.data.v2.models.Row;
@@ -59,7 +60,8 @@ public class BigtableRepository {
 
       return Optional.of(columns);
     } catch (Exception e) {
-      throw new DatastoreException("Bigtable read failed for loan: " + mask(loanNumber), e);
+      throw new DatastoreException(
+          "Bigtable read failed for loan: " + LogMask.accountOrLoanNumber(loanNumber), e);
     }
   }
 
@@ -97,15 +99,8 @@ public class BigtableRepository {
 
       return Optional.of(columns);
     } catch (Exception e) {
-      throw new DatastoreException("Bigtable summary read failed for loan: " + mask(loanNumber), e);
+      throw new DatastoreException(
+          "Bigtable summary read failed for loan: " + LogMask.accountOrLoanNumber(loanNumber), e);
     }
-  }
-
-  /** Masks all but the last 4 characters of a loan number for safe logging. */
-  private static String mask(String value) {
-    if (value == null || value.length() <= 4) {
-      return "****";
-    }
-    return "*".repeat(value.length() - 4) + value.substring(value.length() - 4);
   }
 }
