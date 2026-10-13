@@ -57,7 +57,6 @@ class LoanNotesServiceTest {
     CreateNoteResponse result = service.createNote("LN1000000001", null, req);
 
     assertThat(result).isEqualTo(resp);
-    // Verify a non-blank generated idempotency key was passed
     verify(loanServicingClient)
         .createNote(eq("LN1000000001"), eq(""), argThat(k -> k != null && !k.isBlank()), eq(req));
   }

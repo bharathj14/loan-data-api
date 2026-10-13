@@ -1,5 +1,4 @@
-// Controller layer: exposes POST /api/v1/loans/{loanNumber}/notes proxying to the downstream
-// service.
+// Controller layer: exposes POST /api/v1/loans/{loanNumber}/notes proxying to the downstream service.
 package com.example.lending.loandata.controller;
 
 import com.example.lending.loandata.model.dto.CreateNoteRequest;
