@@ -1,3 +1,4 @@
+// Test layer: smoke test that verifies the full application context loads successfully.
 package com.example.lending.loandata;
 
 import org.junit.jupiter.api.Test;
