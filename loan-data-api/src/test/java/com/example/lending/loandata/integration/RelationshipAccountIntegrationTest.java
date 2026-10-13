@@ -1,5 +1,4 @@
-// Test layer: integration tests for the relationship-accounts endpoint — require
-// Docker/Testcontainers.
+// Test layer: integration tests for relationship-accounts endpoint, requires Docker.
 package com.example.lending.loandata.integration;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
